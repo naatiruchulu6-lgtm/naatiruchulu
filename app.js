@@ -212,6 +212,10 @@ function updateQuantity(cartItemId, delta) {
             removeFromCart(cartItemId);
         } else {
             updateCartUI();
+            if (delta > 0) {
+                const totalItems = cart.reduce((sum, i) => sum + i.quantity, 0);
+                showToast(`${item.name} (${item.unit}) added! (Total items in cart: ${totalItems})`);
+            }
         }
     }
 }
