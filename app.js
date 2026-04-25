@@ -67,20 +67,54 @@ function renderProducts() {
                 
                 <div class="mt-auto pt-4 border-t border-stone-100 flex flex-col gap-3">
                     <div class="flex justify-between items-center">
-                        <select id="variant-${product.id}" onchange="updatePriceDisplay('${product.id}')" class="bg-stone-50 border border-stone-200 text-stone-700 text-sm font-medium rounded-lg focus:ring-brand-500 focus:border-brand-500 block px-2 py-1 outline-none cursor-pointer">
+                        <select id="variant-${product.id}" onchange="handleVariantChange('${product.id}')" class="bg-stone-50 border border-stone-200 text-stone-700 text-sm font-medium rounded-lg focus:ring-brand-500 focus:border-brand-500 block px-2 py-1 outline-none cursor-pointer">
                             ${product.variants.map((v, i) => `<option value="${i}">${v.unit}</option>`).join('')}
                         </select>
                         <span id="price-${product.id}" class="text-xl font-extrabold text-brand-600">₹${product.variants[0].price}</span>
                     </div>
-                    <button onclick="addToCart('${product.id}')" class="w-full bg-brand-50 hover:bg-brand-100 text-brand-700 py-2 rounded-xl transition-colors font-bold flex justify-center items-center gap-2">
-                        <i data-lucide="plus" class="h-5 w-5"></i> Add to Cart
-                    </button>
+                    <div id="action-${product.id}">
+                        <!-- Action UI injected by JS -->
+                    </div>
                 </div>
             </div>
         `;
         productGrid.appendChild(productCard);
+        updateProductActionUI(product.id);
     });
     lucide.createIcons(); // Re-initialize icons for newly added elements
+}
+
+function handleVariantChange(productId) {
+    updatePriceDisplay(productId);
+    updateProductActionUI(productId);
+    lucide.createIcons();
+}
+
+function updateProductActionUI(productId) {
+    const actionContainer = document.getElementById(`action-${productId}`);
+    if (!actionContainer) return;
+
+    const select = document.getElementById(`variant-${productId}`);
+    const variantIndex = select.value;
+    const cartItemId = `${productId}-${variantIndex}`;
+    
+    const cartItem = cart.find(item => item.cartItemId === cartItemId);
+    
+    if (cartItem && cartItem.quantity > 0) {
+        actionContainer.innerHTML = `
+            <div class="flex justify-between items-center bg-brand-50 rounded-xl py-1 px-2 border border-brand-100 h-10">
+                <button onclick="updateQuantity('${cartItemId}', -1)" class="w-8 h-8 flex justify-center items-center text-brand-700 hover:bg-brand-100 rounded-lg transition-colors"><i data-lucide="minus" class="h-4 w-4"></i></button>
+                <span class="font-bold text-brand-800">${cartItem.quantity}</span>
+                <button onclick="updateQuantity('${cartItemId}', 1)" class="w-8 h-8 flex justify-center items-center text-brand-700 hover:bg-brand-100 rounded-lg transition-colors"><i data-lucide="plus" class="h-4 w-4"></i></button>
+            </div>
+        `;
+    } else {
+        actionContainer.innerHTML = `
+            <button onclick="addToCart('${productId}')" class="w-full bg-brand-50 hover:bg-brand-100 text-brand-700 py-2 rounded-xl transition-colors font-bold flex justify-center items-center gap-2 h-10">
+                <i data-lucide="plus" class="h-5 w-5"></i> Add to Cart
+            </button>
+        `;
+    }
 }
 
 function updatePriceDisplay(productId) {
@@ -235,6 +269,13 @@ function updateCartUI() {
     const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     cartTotalElement.textContent = `₹${totalAmount}`;
     
+    // Update product action buttons in the grid
+    if (typeof products !== 'undefined') {
+        products.forEach(product => {
+            updateProductActionUI(product.id);
+        });
+    }
+
     lucide.createIcons();
 }
 
